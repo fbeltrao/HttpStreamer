@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  httpstreamer:
+    image: httpstreamer
+    build:
+      context: .
+      dockerfile: HttpStreamer/Dockerfile

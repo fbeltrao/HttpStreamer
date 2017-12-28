@@ -1,0 +1,1 @@
+# Http streaming tool that forwards json elements to a Event Hub

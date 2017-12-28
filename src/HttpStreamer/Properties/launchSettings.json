@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HttpStreamer": {
+      "commandName": "Project",
+      "commandLineArgs": "HTTPSTREAM_EVENTHUB=\"\" HTTPSTREAM_URL=/2/open_events HTTPSTREAM_HOST=stream.meetup.com"
+    }
+  }
+}
