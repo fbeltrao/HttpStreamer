@@ -49,13 +49,14 @@ namespace HttpStreamer
             listener.Start(streamURL, streamHost, data);
 
 
-            var endEvent = new ManualResetEvent(false);
+            var exitEvent = new ManualResetEvent(false);
 
-            Console.CancelKeyPress += delegate {
-                endEvent.Set();
+            Console.CancelKeyPress += (sender, eventArgs) => {
+                eventArgs.Cancel = true;
+                exitEvent.Set();
             };
 
-            endEvent.WaitOne();
+            exitEvent.WaitOne();
 
             eventHubProducer.Stop();
             listener.Stop();
