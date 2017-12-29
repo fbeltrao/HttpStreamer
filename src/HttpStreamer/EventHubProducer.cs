@@ -95,7 +95,7 @@ namespace HttpStreamer
                             var eventData = new EventData(new ArraySegment<byte>(memBlock, 0, byteCount));
                             client.SendAsync(eventData).GetAwaiter().GetResult();
 
-                            producer.logger?.LogInformation("Sent message to event hub");                            
+                            producer.logger?.LogInformation($"Sent message to event hub ({byteCount} bytes)");
                         }
                     }
                     else

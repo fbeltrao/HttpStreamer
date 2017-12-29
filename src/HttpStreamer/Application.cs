@@ -36,18 +36,22 @@ namespace HttpStreamer
             var eventHub = config["HTTPSTREAM_EVENTHUB"];
             if (string.IsNullOrEmpty(eventHub))
             {
-                Console.Error.WriteLine("Please provide Event Hub connection string");
-                Environment.Exit(1);
+                if (!System.Diagnostics.Debugger.IsAttached)
+                {
+                    Console.Error.WriteLine("Please provide Event Hub connection string");
+                    Environment.Exit(1);
+                }
             }
 
 
             this.logger?.LogInformation($"Starting streaming\nURL: {streamURL}\nHost: {streamHost}\nEvent Hub: {eventHub}");
 
             var data = new System.Collections.Concurrent.ConcurrentQueue<string>();
-                        
-            eventHubProducer.Start(eventHub, data);
-            listener.Start(streamURL, streamHost, data);
+                 
+            if (!string.IsNullOrEmpty(eventHub))
+                eventHubProducer.Start(eventHub, data);
 
+            listener.Start(streamURL, streamHost, data);
 
             var exitEvent = new ManualResetEvent(false);
 

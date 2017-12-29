@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -133,12 +135,13 @@ namespace HttpStreamer
                         writer.Flush();
 
                         // Process the response.
-                        StreamReader rdr = new StreamReader(stream);
+                        StreamReader rdr = new StreamReader(stream, Encoding.UTF8, true, 8 * 1024, true);
 
                         var isReadingHeader = true;
+                        var currentContent = new StringBuilder(1024 * 1024);
 
                         while (!rdr.EndOfStream)
-                        {
+                        {                            
                             var line = rdr.ReadLine();
                             if (isReadingHeader)
                             {
@@ -149,16 +152,31 @@ namespace HttpStreamer
                                 else if (line.Length > 0 && line[0] == '{')
                                 {
                                     isReadingHeader = false;
-                                    listener.queue.Enqueue(line);
-                                    listener.logger?.LogInformation("Added item to queue");
-                                    listener.logger?.LogDebug($"Added item to queue: {line}");
+                                    currentContent.Append(line);
+                                    if (IsValidJson(currentContent))
+                                    {
+                                        var newItem = currentContent.ToString();
+                                        currentContent.Length = 0;
+                                        listener.queue.Enqueue(newItem);
+                                        listener.logger?.LogInformation("Added item to queue");
+                                        listener.logger?.LogDebug($"Added item to queue: {newItem}");
+                                    }
                                 }
                             }
                             else
                             {
-                                listener.queue.Enqueue(line);
-                                listener.logger?.LogInformation("Added item to queue");
-                                listener.logger?.LogDebug($"Added item to queue: {line}");
+                                if (!IsChunkSizeContent(line))
+                                {
+                                    currentContent.Append(line);
+                                    if (IsValidJson(currentContent))
+                                    {
+                                        var newItem = currentContent.ToString();
+                                        currentContent.Length = 0;
+                                        listener.queue.Enqueue(newItem);
+                                        listener.logger?.LogInformation("Added item to queue");
+                                        listener.logger?.LogDebug($"Added item to queue: {newItem}");
+                                    }
+                                }
                             }
 
                             if (listener.stop)
@@ -176,6 +194,36 @@ namespace HttpStreamer
 
             listener.logger?.LogInformation("Stopping http stream listener");
 
+        }
+
+        /// <summary>
+        /// Workaround to the fact that HTTP will send the chunk size
+        /// For now ignoring it, correct would be to take into account when solving documents
+        /// </summary>
+        /// <param name="line"></param>
+        /// <returns></returns>
+        private static bool IsChunkSizeContent(string line)
+        {
+            if (line.Length <= 4)
+            {
+                return line.All(Char.IsLetterOrDigit);
+            }
+
+            return false;
+        }
+
+        private static bool IsValidJson(StringBuilder currentContent)
+        {
+            try
+            {
+                JObject.Parse(currentContent.ToString());
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            
         }
     }
 }

@@ -13,10 +13,15 @@ namespace HttpStreamer
     {
         static void Main(string[] args)
         {
-            var config = new ConfigurationBuilder()
+            var configBuilder = new ConfigurationBuilder()
                 .AddCommandLine(args)
-                .AddEnvironmentVariables()                               
-                .Build();
+                .AddEnvironmentVariables();
+
+#if DEBUG
+            configBuilder.AddUserSecrets("HttpStreamer");
+#endif
+
+            var config = configBuilder.Build();
 
             var serviceCollection = new ServiceCollection()
                 .AddSingleton(new LoggerFactory()
